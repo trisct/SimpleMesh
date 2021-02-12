@@ -15,6 +15,7 @@ def as_mesh(scene_or_mesh):
     If conversion occurs, the returned mesh has only vertex and face data.
     """
     if isinstance(scene_or_mesh, trimesh.Scene):
+        print('[HERE: In simplemesh.as_mesh] This is a Scene...Something may go wrong.')
         if len(scene_or_mesh.geometry) == 0:
             mesh = None  # empty scene
         else:
@@ -52,7 +53,9 @@ if opt.normalize is not None:
 
 if opt.rotate is not None:
     opt.rotate[1] = eval(opt.rotate[1])
+    
     print('[HERE: In smplmesh] --rotate specified, will rotate %.4f degrees around the %s axis' % (opt.rotate[1], opt.rotate[0]))
+
     if opt.rotate[0] == 'x':
         direction = [1,0,0]
     elif opt.rotate[0] == 'y':
