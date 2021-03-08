@@ -1,46 +1,54 @@
 import trimesh
 import argparse
 import math
+import einops
+
+def get_bbox_mesh(mesh):
+    bbox_max = mesh.vertices.max(axis=0)
+    bbox_min = mesh.vertices.min(axis=0)
+
+    return bbox_max, bbox_min
+    
+def get_bbox_scene(scene):
+    bbox_maxs = []
+    bbox_mins = []
+    
+    for mesh in scene.geometry.values():
+        bbox_max, bbox_min = get_bbox_mesh(mesh)
+        
+        bbox_maxs.append(bbox_max)
+        bbox_mins.append(bbox_min)
+            
+    bbox_maxs = einops.rearrange(bbox_maxs, 'n c -> n c')
+    bbox_mins = einops.rearrange(bbox_mins, 'n c -> n c')
+
+    bbox_max = bbox_maxs.max(axis=0)
+    bbox_min = bbox_mins.max(axis=0)
+
+    return bbox_max, bbox_min
+
+
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-i', '--input', type=str, required=True)
-parser.add_argument('-o', '--output', type=str, required=True)
+parser.add_argument('-o', '--output', type=str)
 parser.add_argument('-n', '--normalize', type=float)
 parser.add_argument('-r', '--rotate', nargs=2)
-
-def as_mesh(scene_or_mesh):
-    """
-    Convert a possible scene to a mesh.
-
-    If conversion occurs, the returned mesh has only vertex and face data.
-    """
-    if isinstance(scene_or_mesh, trimesh.Scene):
-        print('[HERE: In simplemesh.as_mesh] This is a Scene...Something may go wrong.')
-        if len(scene_or_mesh.geometry) == 0:
-            mesh = None  # empty scene
-        else:
-            # we lose texture information here
-            mesh = trimesh.util.concatenate(
-                tuple(trimesh.Trimesh(vertices=g.vertices, faces=g.faces)
-                    for g in scene_or_mesh.geometry.values()))
-    else:
-        assert(isinstance(scene_or_mesh, trimesh.Trimesh))
-        mesh = scene_or_mesh
-    return mesh
+parser.add_argument('--skip_textures', action='store_true')
 
 pi = math.pi
 opt = parser.parse_args()
 
-mesh = trimesh.load_mesh(opt.input)
-mesh = as_mesh(mesh)
+#skip_textures = True if opt.skip_textures else False
 
+mesh = trimesh.load(opt.input)#, skip_textures=skip_textures)
 
 if opt.normalize is not None:
     print('[HERE: In smplmesh] --normalize specified, target bounding box is [-%.4f, %.4f]' % (opt.normalize, opt.normalize))
 
-    bbox_max = mesh.vertices.max(axis=0)
-    bbox_min = mesh.vertices.min(axis=0)
-    bbox_cent = .5 * (bbox_max + bbox_min)
+    bbox_min, bbox_max = mesh.bounds
+    bbox_cent = .5 * (bbox_min + bbox_max)
 
     axis_extent = bbox_max - bbox_min
     max_extent = axis_extent.max()
@@ -72,4 +80,8 @@ if opt.rotate is not None:
         point=[0,0,0])
     mesh.apply_transform(rot_transfm)
 
+if opt.output is None:
+    opt.output = opt.input[:-4] + '_aalnormed.obj'
+
+#mesh.show()
 mesh.export(opt.output)
