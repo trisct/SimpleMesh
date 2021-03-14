@@ -3,35 +3,10 @@ import argparse
 import math
 import einops
 
-def get_bbox_mesh(mesh):
-    bbox_max = mesh.vertices.max(axis=0)
-    bbox_min = mesh.vertices.min(axis=0)
-
-    return bbox_max, bbox_min
-    
-def get_bbox_scene(scene):
-    bbox_maxs = []
-    bbox_mins = []
-    
-    for mesh in scene.geometry.values():
-        bbox_max, bbox_min = get_bbox_mesh(mesh)
-        
-        bbox_maxs.append(bbox_max)
-        bbox_mins.append(bbox_min)
-            
-    bbox_maxs = einops.rearrange(bbox_maxs, 'n c -> n c')
-    bbox_mins = einops.rearrange(bbox_mins, 'n c -> n c')
-
-    bbox_max = bbox_maxs.max(axis=0)
-    bbox_min = bbox_mins.max(axis=0)
-
-    return bbox_max, bbox_min
-
-
-
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-i', '--input', type=str, required=True)
+parser.add_argument('-I', '--info', type=str, action='store_true')
 parser.add_argument('-o', '--output', type=str)
 parser.add_argument('-n', '--normalize', type=float)
 parser.add_argument('-r', '--rotate', nargs=2)
@@ -44,8 +19,14 @@ opt = parser.parse_args()
 
 mesh = trimesh.load(opt.input)#, skip_textures=skip_textures)
 
+if opt.info:
+    print('[HERE: In simplemesh] --info specified, displaying object info...')
+    print(f'| Object type: {mesh}')
+    print(f'| Object bbox: {mesh.bounds}')
+
+
 if opt.normalize is not None:
-    print('[HERE: In smplmesh] --normalize specified, target bounding box is [-%.4f, %.4f]' % (opt.normalize, opt.normalize))
+    print('[HERE: In simplemesh] --normalize specified, target bounding box is [-%.4f, %.4f]' % (opt.normalize, opt.normalize))
 
     bbox_min, bbox_max = mesh.bounds
     bbox_cent = .5 * (bbox_min + bbox_max)
@@ -62,7 +43,7 @@ if opt.normalize is not None:
 if opt.rotate is not None:
     opt.rotate[1] = eval(opt.rotate[1])
     
-    print('[HERE: In smplmesh] --rotate specified, will rotate %.4f degrees around the %s axis' % (opt.rotate[1], opt.rotate[0]))
+    print('[HERE: In simplemesh] --rotate specified, will rotate %.4f degrees around the %s axis' % (opt.rotate[1], opt.rotate[0]))
 
     if opt.rotate[0] == 'x':
         direction = [1,0,0]
