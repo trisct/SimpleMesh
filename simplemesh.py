@@ -6,7 +6,7 @@ import einops
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-i', '--input', type=str, required=True)
-parser.add_argument('-I', '--info', type=str, action='store_true')
+parser.add_argument('-I', '--info', action='store_true')
 parser.add_argument('-o', '--output', type=str)
 parser.add_argument('-n', '--normalize', type=float)
 parser.add_argument('-r', '--rotate', nargs=2)
